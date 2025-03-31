@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiệp Cưới - Lê Cẩm Sung & Lai Phương Bảo Anh </title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Great+Vibes&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Biến màu sắc */
+        :root {
+            --primary-color: #d4a373;
+            --secondary-color: rgba(255, 253, 250, 0.95);
+            --text-color: #333;
+            --gold-color: #c9a66b;
+            --card-bg: rgba(255, 253, 250, 0.95);
+            --card-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            --bride-color: #ff9ff3;
+            --groom-color: #74b9ff;
+            --heart-color: #e91e63;
+        }
+        
+        /* Kiểu chung */
+        body {
+            font-family: 'Playfair Display', serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            line-height: 1.6;
+            position: relative;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Hệ thống hình nền */
+        .background-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .background-slideshow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+            overflow: hidden;
+            z-index: -1
+        }
+        
+        .background-slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 3s ease-in-out;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            image-rendering: -webkit-optimize-contrast;
+        }
+        
+        .background-slide.active {
+            opacity: 1;
+        }
+        
+        /* Layout chính */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: transparent;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin-top: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            border: 1px solid rgba(212, 163, 115, 0.3);
+        }
+        
+        /* Phần header */
+        .header {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-family: 'Great Vibes', cursive;
+            font-size: 4rem;
+            color: var(--gold-color);
+            margin: 10px 0;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .couple-names {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.8rem;
+            margin: 10px 0;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .heart-symbol {
+            color: var(--heart-color);
+            font-size: 2.5rem;
+            margin: 0 15px;
+            animation: heartbeat 1.5s infinite;
+        }
+        
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.1); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Phần đếm ngược */
+        .countdown-container {
+            background: rgba(212, 163, 115, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            margin: 30px auto;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .countdown-container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .countdown-title {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .countdown {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .wedding-date {
+            font-style: italic;
+            margin-top: 10px;
+            color: var(--text-color);
+        }
+        
+        /* Phần cô dâu chú rể */
+        .couple-section {
+            display: flex;
+            justify-content: space-around;
+            margin: 40px 0;
+            flex-wrap: wrap;
+        }
+        
+        .couple-card {
+            text-align: center;
+            width: 45%;
+            min-width: 250px;
+            margin-bottom: 20px;
+            background: rgba(255, 245, 238, 0.7);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(212, 163, 115, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .couple-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .couple-image {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 5px solid var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .couple-name {
+            font-size: 1.8rem;
+            margin: 10px 0;
+            color: var(--primary-color);
+        }
+        
+        .couple-quote {
+            font-style: italic;
+            margin-top: 10px;
+            color: var(--text-color);
+        }
+        
+        /* Phần gia đình */
+        .family-section {
+            margin: 40px 0;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(212, 163, 115, 0.3);
+        }
+        
+        .family-header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            position: relative;
+            padding-bottom: 10px;
+        }
+        
+        .family-header:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        
+        .family-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .family-side {
+            flex: 1;
+            min-width: 250px;
+            margin-bottom: 20px;
+            background: rgba(255, 250, 240, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(212, 163, 115, 0.2);
+        }
+        
+        .bride-family {
+            border-top: 3px solid var(--bride-color);
+        }
+        
+        .groom-family {
+            border-top: 3px solid var(--groom-color);
+        }
+        
+        .family-title {
+            text-align: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(212, 163, 115, 0.3);
+        }
+        
+        .family-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .family-member {
+            padding: 10px 0;
+            border-bottom: 1px dashed rgba(212, 163, 115, 0.3);
+            text-align: center;
+        }
+        
+        .member-name {
+            font-weight: 500;
+        }
+        
+        .member-relation {
+            color: var(--primary-color);
+            font-style: italic;
+            display: block;
+            margin-top: 5px;
+        }
+        
+        .youngest {
+            color: #b5838d;
+            font-weight: bold;
+        }
+        
+        .family-address {
+            margin-top: 20px;
+            font-style: italic;
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid rgba(212, 163, 115, 0.3);
+        }
+        
+        /* Phần lời mời */
+        .invitation-text {
+            text-align: center;
+            font-style: italic;
+            margin: 30px 0;
+            font-size: 1.2rem;
+            color: var(--text-color);
+        }
+        
+        /* Phần thông tin giờ */
+        .time-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .time-box {
+            background: var(--card-bg);
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            min-width: 150px;
+            border: 1px solid rgba(212, 163, 115, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .time-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .time-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        /* Phần thông tin địa điểm */
+        /* Phần thông tin địa điểm - Phiên bản nâng cấp */
+.wedding-info-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                url('https://res.cloudinary.com/dabigltoc/image/upload/v1743406798/diamond_place_2_kpdskz.jpg') center/cover;
+    padding: 40px 30px;
+    border-radius: 15px;
+    margin: 40px 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.5s ease;
+    border: 1px solid var(--gold-color);
+}
+
+.wedding-info-section:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+.wedding-info-section > div {
+    background: linear-gradient(
+        to right bottom,
+        rgba(255, 253, 250, 0.65),
+        rgba(255, 253, 250, 0.95)
+    );
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-radius: 10px;
+    padding: 25px;
+    border: 1px solid rgba(212, 163, 115, 0.4);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.wedding-info-section h2 {
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2rem;
+    position: relative;
+}
+
+.wedding-info-section h2:after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 2px;
+    background: var(--primary-color);
+}
+
+.wedding-info-section p {
+    margin: 10px 0;
+    text-align: center;
+    color: #444;
+}
+
+.wedding-info-section p strong {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+/* Hiệu ứng ánh sáng */
+.wedding-info-section:before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+    z-index: 1;
+    animation: rotateLight 15s linear infinite;
+}
+
+@keyframes rotateLight {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+        
+        /* Phần bản đồ */
+        .map-section {
+            margin: 40px 0;
+        }
+        
+        .map-container {
+            height: 350px;
+            margin: 20px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(212, 163, 115, 0.3);
+        }
+        
+        .map-controls {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .map-controls input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid rgba(212, 163, 115, 0.5);
+            border-radius: 5px 0 0 5px;
+            background: rgba(255, 245, 238, 0.8);
+        }
+        
+        .map-controls button {
+            padding: 10px 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0 5px 5px 0;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .map-controls button:hover {
+            background: #b5838d;
+        }
+        
+        /* Phần gallery ảnh */
+        .gallery-section {
+            margin: 40px 0;
+        }
+        
+        .gallery-title {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .gallery-title:after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: var(--primary-color);
+        }
+        
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+            height: 150px;
+            cursor: pointer;
+            transition: transform 0.3s;
+            background: rgba(255, 245, 238, 0.7);
+            border: 1px solid rgba(212, 163, 115, 0.3);
+        }
+        
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .gallery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+        
+        /* Phần chân trang */
+.footer {
+    text-align: center;
+    padding: 40px 20px;
+    margin-top: 60px;
+    background: linear-gradient(
+        to right,
+        rgba(212, 163, 115, 0.1),
+        rgba(255, 253, 250, 0.8),
+        rgba(212, 163, 115, 0.1)
+    );
+    border-top: 1px solid var(--primary-color);
+    border-bottom: 1px solid var(--primary-color);
+    color: var(--text-color);
+}
+.footer:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 3px;
+    background: var(--primary-color);
+}
+        
+        .footer p:nth-child(2) {
+             color: var(--heart-color);
+    margin-top: 15px;
+    position: relative;
+    display: inline-block;
+        }
+        .footer p:nth-child(2):after,
+.footer p:nth-child(2):before {
+    content: "❦";
+    margin: 0 15px;
+    color: var(--gold-color);
+}
+        /* Nút điều khiển nhạc */
+        .music-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary-color);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        .music-control:hover {
+            transform: scale(1.1);
+            background: #b5838d;
+        }
+        
+        /* Modal xem ảnh */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        
+        .modal-content {
+            display: block;
+            margin: auto;
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .close {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: white;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Responsive cho mobile */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .couple-names {
+                font-size: 1.5rem;
+            }
+            
+            .time-info {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+            }
+            
+            .family-container {
+                flex-direction: column;
+            }
+            
+            .couple-card, .family-side {
+                width: 100%;
+            }
+            
+            .gallery-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            
+            .music-control {
+                bottom: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2.8rem !important;
+                margin: 15px 0 !important;
+            }
+            
+            .couple-names {
+                font-size: 2rem !important;
+                flex-direction: column;
+            }
+            
+            .countdown {
+                font-size: 1.5rem !important;
+                line-height: 1.4;
+            }
+            
+            .time-box {
+                min-width: 90% !important;
+                padding: 20px !important;
+                font-size: 1.1rem !important;
+            }
+            
+            .family-address p {
+                font-size: 1rem !important;
+            }
+            
+            .footer p {
+                font-size: 1.1rem !important;
+                padding: 0 10px;
+            }
+            
+            .time-box h3 {
+                font-size: 1.3rem !important;
+                margin-bottom: 8px;
+            }
+            
+            .time-box p {
+                font-size: 1.2rem !important;
+            }
+            
+            .couple-image {
+                width: 150px !important;
+                height: 150px !important;
+                border-width: 3px !important;
+            }
+            
+            .family-address p {
+                word-break: keep-all !important;
+                white-space: pre-line !important;
+            }
+            
+            .background-slideshow,
+            .background-overlay {
+                position: absolute;
+                height: 100vh;
+            }
+            
+            .container {
+                background: rgba(255, 253, 250, 0.8);
+            }
+        }
+        
+        /* Animation khi scroll */
+        [data-aos] {
+            opacity: 0;
+            transition-property: opacity, transform;
+            transition-duration: 1.2s;
+            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+            backface-visibility: hidden;
+        }
+        
+        [data-aos].aos-animate {
+            opacity: 1;
+            transform: none;
+        }
+        
+        [data-aos="fade"] {
+            transform: scale(0.95);
+        }
+        
+        [data-aos="fade-up"] {
+            transform: translateY(40px);
+        }
+        
+        [data-aos="fade-down"] {
+            transform: translateY(-40px);
+        }
+        
+        [data-aos="fade-left"] {
+            transform: translateX(40px);
+        }
+        
+        [data-aos="fade-right"] {
+            transform: translateX(-40px);
+        }
+        
+        [data-aos="zoom-in"] {
+            transform: scale(0.8);
+        }
+        
+        [data-aos-delay="100"] { transition-delay: 0.1s; }
+        [data-aos-delay="200"] { transition-delay: 0.2s; }
+        [data-aos-delay="300"] { transition-delay: 0.3s; }
+        [data-aos-delay="400"] { transition-delay: 0.4s; }
+        [data-aos-delay="500"] { transition-delay: 0.5s; }
+        [data-aos-delay="600"] { transition-delay: 0.6s; }
+        [data-aos-delay="700"] { transition-delay: 0.7s; }
+        [data-aos-delay="800"] { transition-delay: 0.8s; }
+        [data-aos-delay="900"] { transition-delay: 0.9s; }
+        [data-aos-delay="1000"] { transition-delay: 1s; }
+
+        /* Style cho phần RSVP */
+        .rsvp-section {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            margin: 40px 0;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(212, 163, 115, 0.3);
+        }
+
+        .rsvp-title {
+            text-align: center;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .rsvp-title:after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: var(--primary-color);
+        }
+
+        /* Style cho form nhúng */
+        .embedded-form {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .embedded-form iframe {
+            border: none;
+            min-height: 500px;
+        }
+
+        /* Style cho nút bấm */
+        .rsvp-description {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .rsvp-button-container {
+            text-align: center;
+            margin: 25px 0;
+        }
+
+        .rsvp-button {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .rsvp-button:hover {
+            background: #b5838d;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .embedded-form iframe {
+                min-height: 600px;
+            }
+            
+            .rsvp-section {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Hệ thống hình nền -->
+    <div class="background-slideshow">
+        <div class="background-slide" style="background-image: url('https://res.cloudinary.com/dabigltoc/image/upload/v1743219172/samples/landscapes/nature-mountains.jpg');"></div>
+        <div class="background-slide" style="background-image: url('https://images.unsplash.com/photo-1518621736915-f3b1c41bfd00?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+        <div class="background-slide" style="background-image: url('https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');"></div>
+    </div>
+    <div class="background-overlay"></div>
+    
+    <!-- Nội dung chính -->
+    <div class="container">
+        <!-- Phần header -->
+        <div class="header" data-aos="fade-down" data-aos-delay="100">
+            <h1 data-aos="fade-down" data-aos-delay="200">Thiệp Mời</h1>
+        </div>
+        
+        <!-- Phần cô dâu chú rể -->
+        <div class="couple-section" data-aos="fade-up" data-aos-delay="300">
+            <div class="couple-image-container">
+                <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_CÔ_DÂU" class="couple-image bride" data-aos="fade-right" data-aos-delay="400">
+                <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_CHÚ_RỂ" class="couple-image groom" data-aos="fade-left" data-aos-delay="400">
+            </div>
+        </div>
+        
+        <div class="couple-names" data-aos="fade-up" data-aos-delay="500">
+            <span data-aos="fade-right" data-aos-delay="600">Lê Cẩm Sung</span>
+            <span class="heart-symbol" data-aos="zoom-in" data-aos-delay="700">❤</span>
+            <span data-aos="fade-left" data-aos-delay="600">Lai Phương Bảo Anh</span>
+        </div>
+        
+        <!-- Phần gia đình -->
+        <div class="family-section" data-aos="fade-up" data-aos-delay="800">
+            <h2 class="family-header" data-aos="fade-down" data-aos-delay="900">Gia Đình Hai Bên</h2>
+            <div class="family-container">
+                <div class="family-side bride-family" data-aos="fade-right" data-aos-delay="1000">
+                    <h3 class="family-title">Nhà Trai</h3>
+                    <ul class="family-list">
+                        <li class="family-member">
+                            <span class="member-name">Ông Lê Vĩ Anh & Bà Huỳnh Ngọc Muổi</span>
+                            <span class="member-relation">Cha Mẹ</span>
+                        </li>
+                        <li class="family-member">
+                            <span class="member-name youngest">Lê Cẩm Sung</span>
+                            <span class="member-relation youngest">Út Nam</span>
+                        </li>
+                    </ul>
+                    <div class="family-address">
+                        <p>301/27 Đường Kênh Tân Hóa, Hòa Thạnh,Tân Phú, TP.HCM</p>
+                    </div>
+                </div>
+                
+                <div class="family-side groom-family" data-aos="fade-left" data-aos-delay="1000">
+                    <h3 class="family-title">Nhà Gái</h3>
+                    <ul class="family-list">
+                        <li class="family-member">
+                            <span class="member-name">Ông Lai Trung & Bà Trương Thị Phương</span>
+                            <span class="member-relation">Cha Mẹ</span>
+                        </li>
+                        <li class="family-member">
+                            <span class="member-name youngest">Lai Phương Bảo Anh</span>
+                            <span class="member-relation youngest">Út Nữ</span>
+                        </li>
+                    </ul>
+                    <div class="family-address">
+                        <p>789 Đường GHI, Quận 3, TP.HCM</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Phần lời mời -->
+        <div class="invitation-text" data-aos="fade-up" data-aos-delay="1100">
+            <p>Kính mời quý khách đến dự lễ thành hôn của chúng tôi</p>
+        </div>
+        
+        <!-- Phần đếm ngược -->
+        <div class="countdown-container" data-aos="zoom-in" data-aos-delay="1200">
+            <div class="countdown-title">Đếm ngược đến ngày trọng đại</div>
+            <div class="countdown" id="countdown"></div>
+            <div class="wedding-date">06 tháng 12 năm 2025</div>
+        </div>
+        
+        <!-- Phần thông tin giờ -->
+        <div class="time-info" data-aos="fade-up" data-aos-delay="1300">
+            <div class="time-box" data-aos="fade-up" data-aos-delay="1400">
+                <div class="time-icon">🕕</div>
+                <h3>Đón khách</h3>
+                <p>18:00</p>
+            </div>
+            <div class="time-box" data-aos="fade-up" data-aos-delay="1500">
+                <div class="time-icon">🍽️</div>
+                <h3>Nhập tiệc</h3>
+                <p>19:00</p>
+            </div>
+            <div class="time-box" data-aos="fade-up" data-aos-delay="1600">
+                <div class="time-icon">📅</div>
+                <h3>Ngày</h3>
+                <p>06/12/2025</p>
+            </div>
+        </div>
+        
+        <!-- Phần thông tin địa điểm -->
+        <div class="wedding-info-section" data-aos="fade-up" data-aos-delay="1700">
+            <div data-aos="fade-up" data-aos-delay="1800">
+                <h2>Thông tin lễ cưới</h2>
+                <p>Hôn lễ được tổ chức tại:</p>
+                <p><strong>Diamond Place II</strong></p>
+                <p>584 Đ. Âu Cơ, Phường 10, Tân Bình, Hồ Chí Minh</p>
+            </div>
+        </div>
+        
+        <!-- Phần bản đồ -->
+        <div class="map-section" data-aos="fade-up" data-aos-delay="1900">
+            <h2 data-aos="fade-down" data-aos-delay="2000">Địa điểm tổ chức</h2>
+            <div class="map-controls" data-aos="fade-up" data-aos-delay="2100">
+                <input type="text" id="address-input" placeholder="Nhập địa chỉ nhà hàng" value="584 Đ. Âu Cơ, Phường 10, Tân Bình, Hồ Chí Minh">
+                <button onclick="capNhatBanDo()">Cập nhật bản đồ</button>
+            </div>
+            <div id="map" class="map-container" data-aos="fade-up" data-aos-delay="2200"></div>
+        </div>
+        
+        <!-- Phần gallery ảnh -->
+        <div class="gallery-section" data-aos="fade-up" data-aos-delay="2300">
+            <h2 class="gallery-title" data-aos="fade-down" data-aos-delay="2400">Khoảnh Khắc Của Chúng Tôi</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item" onclick="moModal(this)" data-aos="fade-up" data-aos-delay="2500">
+                    <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_1" class="gallery-img">
+                </div>
+                <div class="gallery-item" onclick="moModal(this)" data-aos="fade-up" data-aos-delay="2600">
+                    <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_2" class="gallery-img">
+                </div>
+                <div class="gallery-item" onclick="moModal(this)" data-aos="fade-up" data-aos-delay="2700">
+                    <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_3" class="gallery-img">
+                </div>
+                <div class="gallery-item" onclick="moModal(this)" data-aos="fade-up" data-aos-delay="2800">
+                    <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_4" class="gallery-img">
+                </div>
+                <div class="gallery-item" onclick="moModal(this)" data-aos="fade-up" data-aos-delay="2900">
+                    <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_5" class="gallery-img">
+                </div>
+                <div class="gallery-item" onclick="moModal(this)" data-aos="fade-up" data-aos-delay="3000">
+                    <img src="https://drive.google.com/uc?export=view&id=ID_ẢNH_6" class="gallery-img">
+                </div>
+            </div>
+        </div>
+              
+                <!-- Phần chân trang -->
+        <div class="footer" data-aos="fade-up" data-aos-delay="3200">
+            <p>Trân trọng kính mời quý khách đến chung vui cùng gia đình chúng tôi</p>
+            <p>❤️ Sự hiện diện của quý khách là niềm vinh hạnh cho gia đình chúng tôi ❤️</p>
+        </div>
+    </div>
+     <!-- Phần xác nhận tham dự -->
+        <div class="rsvp-section" data-aos="fade-up" data-aos-delay="3100">
+            <h2 class="rsvp-title">Xác Nhận Tham Dự</h2>
+            <div class="rsvp-description">
+                <p>Vui lòng nhấp vào nút bên dưới để điền thông tin xác nhận:</p>
+            </div>
+            <div class="rsvp-button-container">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSexml7rd_YlNE6_qDT7mrF8t9ilLVFVkPpFgfjamURCiL-GuQ/viewform" 
+                   target="_blank" 
+                   class="rsvp-button">
+                    Xác Nhận Ngay
+                </a>
+            </div>
+        </div>
+    
+    <!-- Nút điều khiển nhạc -->
+    <div class="music-control" onclick="batTatNhac()" data-aos="fade-left" data-aos-delay="3300">
+        ♫
+    </div>
+    
+    <!-- Modal xem ảnh -->
+    <div id="modal" class="modal">
+        <span class="close" onclick="dongModal()">&times;</span>
+        <img class="modal-content" id="modal-image">
+    </div>
+    
+    <!-- Nhạc nền -->
+    <audio id="wedding-music" loop>
+        <source src="https://res.cloudinary.com/dabigltoc/video/upload/v1743222482/y2mate.com-I-Do-911-Lyrics-Vietsub_720pHF_lzkaht.mp3" type="audio/mpeg">
+        Trình duyệt của bạn không hỗ trợ phát nhạc.
+    </audio>
+
+    <!-- JavaScript -->
+    <script>
+        // Biến toàn cục cho bản đồ
+        let banDo;
+        let danhDau;
+        
+        // Hàm thay đổi hình nền tự động
+        function thayDoiHinhNen() {
+            let slideHienTai = 0;
+            const cacSlide = document.querySelectorAll('.background-slide');
+            
+            if (cacSlide.length > 0) {
+                cacSlide[0].classList.add('active');
+                
+                setInterval(() => {
+                    cacSlide[slideHienTai].classList.remove('active');
+                    slideHienTai = (slideHienTai + 1) % cacSlide.length;
+                    cacSlide[slideHienTai].classList.add('active');
+                }, 5000);
+            }
+        }
+        
+        // Hàm đếm ngược đến ngày cưới
+        function demNguocNgayCuoi() {
+            const ngayCuoi = new Date("2025-12-06T18:00:00").getTime();
+            
+            function capNhatDemNguoc() {
+                const bayGio = new Date().getTime();
+                const khoangCach = ngayCuoi - bayGio;
+                
+                const ngay = Math.floor(khoangCach / (1000 * 60 * 60 * 24));
+                const gio = Math.floor((khoangCach % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const phut = Math.floor((khoangCach % (1000 * 60 * 60)) / (1000 * 60));
+                const giay = Math.floor((khoangCach % (1000 * 60)) / 1000);
+                
+                document.getElementById("countdown").innerHTML = 
+                    `⏳ Còn ${ngay} ngày ${gio} giờ ${phut} phút ${giay} giây nữa!`;
+                
+                if (khoangCach < 0) {
+                    document.getElementById("countdown").innerHTML = "⏳ Đã qua thời gian diễn ra sự kiện";
+                }
+            }
+            
+            capNhatDemNguoc();
+            setInterval(capNhatDemNguoc, 1000);
+        }
+        
+        // Hàm khởi tạo bản đồ với Leaflet
+        function khoiTaoBanDo() {
+            // Tọa độ mặc định (TP.HCM)
+            const viTriMacDinh = [10.782547,106.643177];
+            
+            banDo = L.map('map').setView(viTriMacDinh, 15);
+            
+            // Sử dụng tile layer từ OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(banDo);
+            
+            // Thêm marker mặc định
+            danhDau = L.marker(viTriMacDinh).addTo(banDo)
+                .bindPopup("Địa điểm tổ chức")
+                .openPopup();
+        }
+        
+        // Hàm cập nhật bản đồ khi địa chỉ thay đổi
+        function capNhatBanDo() {
+            const diaChi = document.getElementById('address-input').value;
+            if (!diaChi) return;
+            
+            // Sử dụng Nominatim API để geocode (miễn phí)
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(diaChi)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        
+                        banDo.setView([lat, lon], 15);
+                        
+                        // Cập nhật marker
+                        if (danhDau) {
+                            banDo.removeLayer(danhDau);
+                        }
+                        danhDau = L.marker([lat, lon]).addTo(banDo)
+                            .bindPopup(diaChi)
+                            .openPopup();
+                    } else {
+                        alert("Không tìm thấy địa chỉ");
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi khi tìm kiếm địa chỉ:", error);
+                    alert("Có lỗi xảy ra khi tìm kiếm địa chỉ");
+                });
+        }
+        
+        // Hàm mở modal xem ảnh
+        function moModal(phanTu) {
+            const modal = document.getElementById("modal");
+            const anhModal = document.getElementById("modal-image");
+            
+            modal.style.display = "block";
+            anhModal.src = phanTu.querySelector('img').src;
+            
+            modal.onclick = function(suKien) {
+                if (suKien.target === modal) {
+                    dongModal();
+                }
+            };
+        }
+        
+        // Hàm đóng modal
+        function dongModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+        
+        // Hàm bật/tắt nhạc
+        function batTatNhac() {
+            const nhac = document.getElementById('wedding-music');
+            const nutNhac = document.querySelector('.music-control');
+            
+            if (nhac.paused) {
+                nhac.play();
+                nutNhac.innerHTML = '♫';
+            } else {
+                nhac.pause();
+                nutNhac.innerHTML = '🔇';
+            }
+        }
+        
+        // Hàm bật nhạc khi người dùng tương tác
+        function batNhacKhiTuongTac() {
+            const nhac = document.getElementById('wedding-music');
+            
+            nhac.play().catch(() => {
+                window.addEventListener('scroll', () => {
+                    nhac.play();
+                }, { once: true });
+                
+                document.addEventListener('click', () => {
+                    nhac.play();
+                }, { once: true });
+            });
+        }
+        
+        // Hàm kích hoạt animation khi scroll
+        function kichHoatAnimationScroll() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('aos-animate');
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -100px 0px'
+            });
+
+            document.querySelectorAll('[data-aos]').forEach(el => {
+                observer.observe(el);
+            });
+        }
+        
+        // Khởi chạy khi trang tải xong
+        window.onload = function() {
+            thayDoiHinhNen();
+            demNguocNgayCuoi();
+            batNhacKhiTuongTac();
+            kichHoatAnimationScroll();
+            khoiTaoBanDo(); // Khởi tạo bản đồ
+        };
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</body>
+</html>
